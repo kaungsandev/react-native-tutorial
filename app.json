@@ -43,12 +43,12 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/BeVietnam-Regular.ttf",
-            "./assets/fonts/BeVietnam-Medium.ttf",
-            "./assets/fonts/BeVietnam-SemiBold.ttf",
-            "./assets/fonts/BeVietnam-Bold.ttf",
-            "./assets/fonts/BeVietnam-ExtraBold.ttf",
-            "./assets/fonts/BeVietnam-Light.ttf"
+            "./assets/fonts/BeVietnamPro-Regular.ttf",
+            "./assets/fonts/BeVietnamPro-Medium.ttf",
+            "./assets/fonts/BeVietnamPro-SemiBold.ttf",
+            "./assets/fonts/BeVietnamPro-Bold.ttf",
+            "./assets/fonts/BeVietnamPro-ExtraBold.ttf",
+            "./assets/fonts/BeVietnamPro-Light.ttf"
           ]
         }
       ]

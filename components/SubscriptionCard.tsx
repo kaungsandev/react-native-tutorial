@@ -6,6 +6,7 @@ import {
 import { clsx } from "clsx";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
+
 const SubscriptionCard = ({
   name,
   price,
@@ -110,7 +111,7 @@ const SubscriptionCard = ({
                   numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {status ? formatStatusLabel(status) : "N/A"}
+                  {status?.trim() ? formatStatusLabel(status) : "N/A"}
                 </Text>
               </View>
             </View>
