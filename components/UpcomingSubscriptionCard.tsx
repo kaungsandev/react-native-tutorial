@@ -1,0 +1,33 @@
+import { formatCurrency } from "@/lib/utils";
+import React from "react";
+import { Image, Text, View } from "react-native";
+
+type UpcomingSubscriptionCardComponentProps = {
+  data: UpcomingSubscriptionCardProps;
+};
+
+const UpcomingSubscriptionCard = ({
+  data: { name, price, daysLeft, icon, currency },
+}: UpcomingSubscriptionCardComponentProps) => {
+  return (
+    <View className="upcoming-card">
+      <View className="upcoming-row">
+        <Image source={icon} className="upcoming-icon" />
+
+        <View>
+          <Text className="upcoming-price">
+            {formatCurrency(price, currency)}
+          </Text>
+          <Text className="upcoming-meta" numberOfLines={1}>
+            {daysLeft > 1 ? `${daysLeft} days left` : "Today!"}
+          </Text>
+        </View>
+      </View>
+      <Text className="upcoming-name" numberOfLines={1}>
+        {name}
+      </Text>
+    </View>
+  );
+};
+
+export default UpcomingSubscriptionCard;

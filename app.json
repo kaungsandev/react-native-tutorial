@@ -38,6 +38,19 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/BeVietnamPro-Regular.ttf",
+            "./assets/fonts/BeVietnamPro-Medium.ttf",
+            "./assets/fonts/BeVietnamPro-SemiBold.ttf",
+            "./assets/fonts/BeVietnamPro-Bold.ttf",
+            "./assets/fonts/BeVietnamPro-ExtraBold.ttf",
+            "./assets/fonts/BeVietnamPro-Light.ttf"
+          ]
+        }
       ]
     ],
     "experiments": {
