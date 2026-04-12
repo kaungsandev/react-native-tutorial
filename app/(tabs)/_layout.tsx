@@ -24,7 +24,7 @@ const TabLayout = () => {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: "absolute",
-          bottom: Math.max(insets.bottom, tabBar.height),
+          bottom: Math.max(insets.bottom, tabBar.horizontalInset),
           height: tabBar.height,
           marginHorizontal: tabBar.horizontalInset,
           borderRadius: tabBar.radius,
