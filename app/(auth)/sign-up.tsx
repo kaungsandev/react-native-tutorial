@@ -24,7 +24,10 @@ const SignUp = () => {
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"signup" | "verify">("signup");
+  const [step, setStep] = useState<"signup" | "verify" | "error">("signup");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const isLoading = fetchStatus === "fetching";
 
@@ -43,7 +46,11 @@ const SignUp = () => {
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl("/");
           if (url.startsWith("http")) {
-            window.location.href = url;
+            if (typeof window !== "undefined" && window.location) {
+              window.location.href = url;
+            } else {
+              router.push(url as any);
+            }
           } else {
             router.push(url as any);
           }
@@ -52,35 +59,139 @@ const SignUp = () => {
     } else if (signUp.status === "missing_requirements") {
       await signUp.verifications.sendEmailCode();
       setStep("verify");
+    } else {
+      console.error("Unexpected signUp status:", signUp.status, signUp);
+      setStep("error");
     }
   };
 
   const handleVerify = async () => {
-    await signUp.verifications.verifyEmailCode({ code });
+    setVerifyLoading(true);
+    setVerifyError(null);
 
-    if (signUp.status === "complete") {
-      await signUp.finalize({
-        navigate: ({ decorateUrl }) => {
-          const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-          } else {
-            router.push(url as any);
-          }
-        },
-      });
+    try {
+      const { error } = await signUp.verifications.verifyEmailCode({ code });
+
+      if (error) {
+        setVerifyError(
+          error.message || "Failed to verify code. Please try again.",
+        );
+        return;
+      }
+
+      if (signUp.status === "complete") {
+        await signUp.finalize({
+          navigate: ({ decorateUrl }) => {
+            const url = decorateUrl("/");
+            if (url.startsWith("http")) {
+              if (typeof window !== "undefined" && window.location) {
+                window.location.href = url;
+              } else {
+                router.push(url as any);
+              }
+            } else {
+              router.push(url as any);
+            }
+          },
+        });
+      } else {
+        setVerifyError("Verification failed. Please try again.");
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to verify code. Please try again.";
+      setVerifyError(errorMessage);
+    } finally {
+      setVerifyLoading(false);
     }
   };
 
   const handleResendCode = async () => {
-    await signUp.verifications.sendEmailCode();
+    if (resendLoading) return;
+
+    setResendLoading(true);
+    setVerifyError(null);
+
+    try {
+      const { error } = await signUp.verifications.sendEmailCode();
+
+      if (error) {
+        setVerifyError(
+          error.message || "Failed to resend code. Please try again.",
+        );
+      } else {
+        setVerifyError(null);
+      }
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to resend code. Please try again.";
+      setVerifyError(errorMessage);
+    } finally {
+      setResendLoading(false);
+    }
   };
 
-  const handleReset = () => {
-    signUp.reset();
-    setStep("signup");
-    setCode("");
+  const handleReset = async () => {
+    try {
+      await signUp.reset();
+      setStep("signup");
+      setCode("");
+      setVerifyError(null);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reset sign-up. Please try again.";
+      setVerifyError(errorMessage);
+      console.error("Sign-up reset error:", error);
+    }
   };
+
+  if (step === "error") {
+    return (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <Image source={images.logo} style={styles.logo} />
+          </View>
+
+          <Text style={styles.title}>Sign Up Error</Text>
+          <Text style={styles.subtitle}>
+            An unexpected error occurred during sign up. Please try again.
+          </Text>
+
+          <View style={styles.form}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => {
+                setStep("signup");
+                setVerifyError(null);
+              }}
+            >
+              <Text style={styles.buttonText}>Try Again</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (step === "verify") {
     return (
@@ -128,27 +239,35 @@ const SignUp = () => {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                (!code || isLoading) && styles.buttonDisabled,
+                (!code || verifyLoading) && styles.buttonDisabled,
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleVerify}
-              disabled={!code || isLoading}
+              disabled={!code || verifyLoading}
             >
-              {isLoading ? (
+              {verifyLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Text style={styles.buttonText}>Verify</Text>
               )}
             </Pressable>
 
+            {verifyError && <Text style={styles.errorText}>{verifyError}</Text>}
+
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                resendLoading && styles.buttonDisabled,
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleResendCode}
+              disabled={resendLoading}
             >
-              <Text style={styles.secondaryButtonText}>Resend code</Text>
+              {resendLoading ? (
+                <ActivityIndicator size="small" color="#666" />
+              ) : (
+                <Text style={styles.secondaryButtonText}>Resend code</Text>
+              )}
             </Pressable>
 
             <Pressable

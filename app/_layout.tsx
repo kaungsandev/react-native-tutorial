@@ -7,7 +7,7 @@ import { useEffect } from "react";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 if (!publishableKey) {
   throw new Error(

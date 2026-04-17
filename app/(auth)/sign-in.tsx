@@ -2,7 +2,7 @@ import images from "@/constants/images";
 import "@/global.css";
 import { useSignIn } from "@clerk/expo";
 import { Link, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -25,6 +25,8 @@ const SignIn = () => {
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"signin" | "verify">("signin");
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
   const isLoading = fetchStatus === "fetching";
 
@@ -42,15 +44,18 @@ const SignIn = () => {
       await signIn.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl("/");
-          if (url.startsWith("http")) {
-            window.location.href = url;
-          } else {
-            router.push(url as any);
-          }
+          router.replace(url as any);
         },
       });
     } else if (signIn.status === "needs_second_factor") {
-      console.log("needs second factor");
+      const emailCodeFactor = signIn.supportedSecondFactors.find(
+        (factor) => factor.strategy === "email_code",
+      );
+
+      if (emailCodeFactor) {
+        await signIn.mfa.sendEmailCode();
+        setStep("verify");
+      }
     } else if (signIn.status === "needs_client_trust") {
       const emailCodeFactor = signIn.supportedSecondFactors.find(
         (factor) => factor.strategy === "email_code",
@@ -64,9 +69,19 @@ const SignIn = () => {
   };
 
   const handleVerify = async () => {
-    await signIn.mfa.verifyEmailCode({ code });
+    setVerifyLoading(true);
+    setVerifyError(null);
+
+    const { error } = await signIn.mfa.verifyEmailCode({ code });
+
+    if (error) {
+      setVerifyError(error.message || "Verification failed. Please try again.");
+      setVerifyLoading(false);
+      return;
+    }
 
     if (signIn.status === "complete") {
+      setVerifyLoading(false);
       await signIn.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl("/");
@@ -77,32 +92,45 @@ const SignIn = () => {
           }
         },
       });
+    } else {
+      setVerifyLoading(false);
+      setVerifyError(
+        "Verification incomplete. Please try again or start over.",
+      );
     }
   };
 
   const handleResendCode = async () => {
-    await signIn.mfa.sendEmailCode();
-  };
+    setVerifyLoading(true);
+    setVerifyError(null);
 
-  const handleReset = () => {
-    signIn.reset();
-    setStep("signin");
-    setCode("");
-  };
+    const { error } = await signIn.mfa.sendEmailCode();
 
-  useEffect(() => {
-    if (signIn.status === "needs_client_trust") {
-      const emailCodeFactor = signIn.supportedSecondFactors.find(
-        (factor) => factor.strategy === "email_code",
+    if (error) {
+      setVerifyError(
+        error.message || "Failed to resend code. Please try again.",
       );
-
-      if (emailCodeFactor) {
-        signIn.mfa.sendEmailCode();
-      }
-      setStep("verify");
+    } else {
+      setVerifyError(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signIn.status]);
+    setVerifyLoading(false);
+  };
+
+  const handleReset = async () => {
+    try {
+      await signIn.reset();
+      setStep("signin");
+      setCode("");
+      setVerifyError(null);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to reset sign-in. Please try again.";
+      setVerifyError(errorMessage);
+      console.error("Sign-in reset error:", error);
+    }
+  };
 
   if (step === "verify") {
     return (
@@ -131,7 +159,10 @@ const SignIn = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Verification Code</Text>
               <TextInput
-                style={[styles.input, errors.fields.code && styles.inputError]}
+                style={[
+                  styles.input,
+                  (errors.fields.code || verifyError) && styles.inputError,
+                ]}
                 value={code}
                 placeholder="Enter 6-digit code"
                 placeholderTextColor="rgba(0, 0, 0, 0.4)"
@@ -139,10 +170,11 @@ const SignIn = () => {
                 keyboardType="numeric"
                 autoCapitalize="none"
                 maxLength={6}
+                editable={!verifyLoading}
               />
-              {errors.fields.code && (
+              {(errors.fields.code || verifyError) && (
                 <Text style={styles.errorText}>
-                  {errors.fields.code.message}
+                  {errors.fields.code?.message || verifyError}
                 </Text>
               )}
             </View>
@@ -150,13 +182,13 @@ const SignIn = () => {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                (!code || isLoading) && styles.buttonDisabled,
+                (!code || verifyLoading) && styles.buttonDisabled,
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleVerify}
-              disabled={!code || isLoading}
+              disabled={!code || verifyLoading}
             >
-              {isLoading ? (
+              {verifyLoading ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Text style={styles.buttonText}>Verify</Text>
@@ -166,9 +198,11 @@ const SignIn = () => {
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                verifyLoading && styles.buttonDisabled,
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleResendCode}
+              disabled={verifyLoading}
             >
               <Text style={styles.secondaryButtonText}>Resend code</Text>
             </Pressable>
@@ -176,9 +210,11 @@ const SignIn = () => {
             <Pressable
               style={({ pressed }) => [
                 styles.secondaryButton,
+                verifyLoading && styles.buttonDisabled,
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleReset}
+              disabled={verifyLoading}
             >
               <Text style={styles.secondaryButtonText}>Start over</Text>
             </Pressable>

@@ -1,11 +1,9 @@
 import "@/global.css";
 import { useAuth } from "@clerk/expo";
 import { Redirect, Stack } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AuthLayout() {
   const { isSignedIn, isLoaded } = useAuth();
-  const insets = useSafeAreaInsets();
 
   if (!isLoaded) {
     return null;
@@ -19,7 +17,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "black" },
+        contentStyle: { backgroundColor: "#fff9e3" },
       }}
     />
   );

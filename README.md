@@ -2,6 +2,21 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Setup
+
+Before running the project, you need to configure your environment variables:
+
+1. Copy the environment example file:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Open the newly created `.env` file and populate the required variables:
+   - `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`: Get this from your [Clerk dashboard](https://dashboard.clerk.com)
+
+3. **Important**: Never commit the `.env` file. It's automatically ignored by git to protect sensitive credentials.
+
 ## Get started
 
 1. Install dependencies
@@ -48,4 +63,5 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
 # react-native-tutorial
