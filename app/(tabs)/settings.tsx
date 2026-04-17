@@ -3,7 +3,8 @@ import "@/global.css";
 import { useClerk, useUser } from "@clerk/expo";
 import { useRouter } from "expo-router";
 import { styled } from "nativewind";
-import React from "react";
+import { usePostHog } from "posthog-react-native";
+import React, { useEffect } from "react";
 import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
@@ -13,8 +14,15 @@ const Settings = () => {
   const { user } = useUser();
   const { signOut } = useClerk();
   const router = useRouter();
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog.screen("Settings");
+  }, [posthog]);
 
   const handleSignOut = async () => {
+    posthog.capture("sign_out_clicked");
+
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       {
         text: "Cancel",
@@ -110,7 +118,9 @@ const Settings = () => {
               pressed && styles.settingItemPressed,
             ]}
             onPress={() => {
-              // TODO: Implement account settings
+              posthog.capture("settings_option_selected", {
+                option: "Account Settings",
+              });
               Alert.alert(
                 "Coming Soon",
                 "Account settings will be available soon.",
@@ -127,7 +137,9 @@ const Settings = () => {
               pressed && styles.settingItemPressed,
             ]}
             onPress={() => {
-              // TODO: Implement notifications
+              posthog.capture("settings_option_selected", {
+                option: "Notifications",
+              });
               Alert.alert(
                 "Coming Soon",
                 "Notification settings will be available soon.",
@@ -144,7 +156,9 @@ const Settings = () => {
               pressed && styles.settingItemPressed,
             ]}
             onPress={() => {
-              // TODO: Implement privacy
+              posthog.capture("settings_option_selected", {
+                option: "Privacy & Security",
+              });
               Alert.alert(
                 "Coming Soon",
                 "Privacy settings will be available soon.",

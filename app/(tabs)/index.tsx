@@ -13,16 +13,37 @@ import { formatCurrency } from "@/lib/utils";
 import { useUser } from "@clerk/expo";
 import dayjs from "dayjs";
 import { styled } from "nativewind";
-import { useState } from "react";
+import { usePostHog } from "posthog-react-native";
+import { useEffect, useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSafeAreaView);
 export default function App() {
   const { user } = useUser();
+  const posthog = usePostHog();
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    posthog.screen("Home");
+  }, [posthog]);
+
+  const handleSubscriptionPress = (item: any) => {
+    const nextExpanded = expandedSubscriptionId === item.id ? null : item.id;
+    setExpandedSubscriptionId(nextExpanded);
+
+    posthog.capture("subscription_card_toggled", {
+      subscription_name: item.name,
+      category: item.category,
+      price: item.price,
+      currency: item.currency,
+      payment_method: item.paymentMethod,
+      expanded: nextExpanded !== null,
+    });
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background p-5">
       <FlatList
@@ -80,11 +101,7 @@ export default function App() {
           <SubscriptionCard
             {...item}
             expanded={expandedSubscriptionId === item.id}
-            onPress={() =>
-              setExpandedSubscriptionId((currentId) =>
-                currentId === item.id ? null : item.id,
-              )
-            }
+            onPress={() => handleSubscriptionPress(item)}
           />
         )}
         extraData={expandedSubscriptionId}
