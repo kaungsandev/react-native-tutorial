@@ -1,6 +1,24 @@
 import "@/global.css";
-import { Stack } from "expo-router";
+import { useAuth } from "@clerk/expo";
+import { Redirect, Stack } from "expo-router";
 
-export default function RootLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+export default function AuthLayout() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  if (!isLoaded) {
+    return null;
+  }
+
+  if (isSignedIn) {
+    return <Redirect href="/" />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: "#fff9e3" },
+      }}
+    />
+  );
 }
